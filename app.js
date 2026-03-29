@@ -364,6 +364,9 @@ const cloud = {
   syncTimer: null,
   pollTimer: null,
   isHydrating: false,
+  isSaving: false,
+  pendingSave: null,
+  pendingHydrate: false,
   status: "本機模式",
   detail: "而家資料只會留喺你部裝置。",
   lastSyncedAt: ""
@@ -446,6 +449,7 @@ function bindEvents() {
   });
   refs.activityForm.addEventListener("submit", handleReportSave);
   refs.activityForm.addEventListener("input", handleDraftInput);
+  refs.activityForm.addEventListener("change", handleDraftInput);
   refs.clearDayBtn.addEventListener("click", handleDayReset);
   refs.foodSearch.addEventListener("input", handleFoodSearch);
   refs.addFoodBtn.addEventListener("click", handleAddFood);
@@ -588,6 +592,11 @@ async function hydrateCloudState({ silent = false } = {}) {
     return;
   }
 
+  if (cloud.isSaving || cloud.syncTimer || cloud.pendingSave) {
+    cloud.pendingHydrate = true;
+    return;
+  }
+
   cloud.isHydrating = true;
   const { data, error } = await cloud.client
     .from(CLOUD_TABLE)
@@ -595,46 +604,57 @@ async function hydrateCloudState({ silent = false } = {}) {
     .eq("user_id", cloud.user.id)
     .maybeSingle();
 
-  if (error) {
+  try {
+    if (error) {
+      if (!silent) {
+        setCloudStatus("載入雲端失敗", error.message);
+        renderCloudMeta();
+      }
+      return;
+    }
+
+    if (data?.payload) {
+      const hasNewRemoteState = Boolean(data.updated_at && data.updated_at !== cloud.lastSyncedAt);
+      if (hasNewRemoteState || !cloud.lastSyncedAt) {
+        applyState(normalizeAppState(data.payload));
+        persistLocalState();
+      }
+      cloud.lastSyncedAt = data.updated_at || cloud.lastSyncedAt;
+      if (!silent) {
+        setCloudStatus("雲端已同步", `已載入 ${cloud.user.email || "你個帳戶"} 嘅最新資料。`);
+      }
+    } else {
+      await saveCloudState({ immediate: true, silent: true });
+      if (!silent) {
+        setCloudStatus("雲端已初始化", "已將你而家部裝置嘅資料上傳去 Supabase。");
+      }
+    }
+  } finally {
     cloud.isHydrating = false;
+    if (cloud.pendingSave) {
+      await flushPendingCloudSave();
+    } else if (cloud.pendingHydrate) {
+      cloud.pendingHydrate = false;
+      await hydrateCloudState({ silent: true });
+    }
     if (!silent) {
-      setCloudStatus("載入雲端失敗", error.message);
       renderCloudMeta();
     }
-    return;
+    render();
   }
-
-  if (data?.payload) {
-    const hasNewRemoteState = Boolean(data.updated_at && data.updated_at !== cloud.lastSyncedAt);
-    if (hasNewRemoteState || !cloud.lastSyncedAt) {
-      applyState(normalizeAppState(data.payload));
-      persistLocalState();
-    }
-    cloud.lastSyncedAt = data.updated_at || cloud.lastSyncedAt;
-    if (!silent) {
-      setCloudStatus("雲端已同步", `已載入 ${cloud.user.email || "你個帳戶"} 嘅最新資料。`);
-    }
-  } else {
-    await saveCloudState({ immediate: true, silent: true });
-    if (!silent) {
-      setCloudStatus("雲端已初始化", "已將你而家部裝置嘅資料上傳去 Supabase。");
-    }
-  }
-
-  cloud.isHydrating = false;
-  if (!silent) {
-    renderCloudMeta();
-  }
-  render();
 }
 
 async function saveCloudState({ immediate = false, silent = false } = {}) {
   if (!cloud.client || !cloud.user || cloud.isHydrating) {
+    if (cloud.client && cloud.user && cloud.isHydrating) {
+      queuePendingCloudSave({ immediate, silent });
+    }
     return;
   }
 
   const run = async () => {
     cloud.syncTimer = null;
+    cloud.isSaving = true;
     const payload = serializeState();
     const updatedAt = new Date().toISOString();
     const { error } = await cloud.client.from(CLOUD_TABLE).upsert(
@@ -646,18 +666,28 @@ async function saveCloudState({ immediate = false, silent = false } = {}) {
       { onConflict: "user_id" }
     );
 
-    if (error) {
+    try {
+      if (error) {
+        if (!silent) {
+          setCloudStatus("同步失敗", error.message);
+          renderCloudMeta();
+        }
+        return;
+      }
+
+      cloud.lastSyncedAt = updatedAt;
       if (!silent) {
-        setCloudStatus("同步失敗", error.message);
+        setCloudStatus("已同步到 Supabase", cloud.user.email || "資料已上雲");
         renderCloudMeta();
       }
-      return;
-    }
-
-    cloud.lastSyncedAt = updatedAt;
-    if (!silent) {
-      setCloudStatus("已同步到 Supabase", cloud.user.email || "資料已上雲");
-      renderCloudMeta();
+    } finally {
+      cloud.isSaving = false;
+      if (cloud.pendingSave) {
+        await flushPendingCloudSave();
+      } else if (cloud.pendingHydrate) {
+        cloud.pendingHydrate = false;
+        await hydrateCloudState({ silent: true });
+      }
     }
   };
 
@@ -671,6 +701,31 @@ async function saveCloudState({ immediate = false, silent = false } = {}) {
   cloud.syncTimer = setTimeout(() => {
     run();
   }, 700);
+}
+
+function queuePendingCloudSave({ immediate = false, silent = false } = {}) {
+  if (!cloud.pendingSave) {
+    cloud.pendingSave = {
+      immediate: false,
+      silent: true
+    };
+  }
+
+  cloud.pendingSave.immediate = cloud.pendingSave.immediate || immediate;
+  cloud.pendingSave.silent = cloud.pendingSave.silent && silent;
+}
+
+async function flushPendingCloudSave() {
+  if (!cloud.pendingSave || cloud.isHydrating || cloud.isSaving) {
+    return;
+  }
+
+  const nextSave = cloud.pendingSave;
+  cloud.pendingSave = null;
+  await saveCloudState({
+    immediate: true,
+    silent: nextSave.silent
+  });
 }
 
 function populateMealSelects() {
@@ -1606,7 +1661,7 @@ function startCloudPolling() {
     if (!document.hidden && cloud.user) {
       hydrateCloudState({ silent: true });
     }
-  }, 15000);
+  }, 5000);
 }
 
 function stopCloudPolling() {
