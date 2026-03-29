@@ -886,19 +886,24 @@ function render() {
 }
 
 function renderCloudMeta() {
+  const isConnected = Boolean(cloud.user);
   refs.cloudStatus.textContent = cloud.status;
   refs.cloudDetail.textContent = cloud.detail;
-  refs.cloudMeta.textContent = cloud.user
+  refs.cloudMeta.textContent = isConnected
     ? `${cloud.user.email || "已登入"}${cloud.lastSyncedAt ? ` · 最後同步 ${formatDateTime(cloud.lastSyncedAt)}` : ""}`
     : cloud.configured
       ? "登入後會自動跨裝置同步"
       : "填好 Supabase config 後先會出現雲端同步";
 
-  refs.signOutBtn.hidden = !cloud.user;
-  refs.authForm.hidden = Boolean(cloud.user);
-  refs.cloudActions.hidden = !cloud.user;
-  refs.authEmail.disabled = Boolean(cloud.user);
-  refs.authSubmitBtn.disabled = Boolean(cloud.user);
+  refs.signOutBtn.hidden = !isConnected;
+  refs.authForm.hidden = isConnected;
+  refs.cloudActions.hidden = !isConnected;
+  refs.authForm.classList.toggle("is-hidden", isConnected);
+  refs.cloudActions.classList.toggle("is-hidden", !isConnected);
+  refs.authForm.setAttribute("aria-hidden", String(isConnected));
+  refs.cloudActions.setAttribute("aria-hidden", String(!isConnected));
+  refs.authEmail.disabled = isConnected;
+  refs.authSubmitBtn.disabled = isConnected;
 }
 
 function renderHeroStats() {

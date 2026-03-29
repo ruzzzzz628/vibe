@@ -166,6 +166,10 @@ button {
   display: none;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .auth-field {
   min-width: 260px;
 }
