@@ -427,7 +427,8 @@ const refs = {
   cloudActions: document.querySelector(".cloud-actions"),
   cloudStatus: document.getElementById("cloudStatus"),
   cloudDetail: document.getElementById("cloudDetail"),
-  cloudMeta: document.getElementById("cloudMeta")
+  cloudMeta: document.getElementById("cloudMeta"),
+  cloudSyncTime: document.getElementById("cloudSyncTime")
 };
 
 let selectedDate = getTodayKey();
@@ -890,10 +891,13 @@ function renderCloudMeta() {
   refs.cloudStatus.textContent = cloud.status;
   refs.cloudDetail.textContent = cloud.detail;
   refs.cloudMeta.textContent = isConnected
-    ? `${cloud.user.email || "已登入"}${cloud.lastSyncedAt ? ` · 最後同步 ${formatDateTime(cloud.lastSyncedAt)}` : ""}`
+    ? `${cloud.user.email || "已登入"}`
     : cloud.configured
       ? "登入後會自動跨裝置同步"
       : "填好 Supabase config 後先會出現雲端同步";
+  refs.cloudSyncTime.textContent = `最後同步：${
+    cloud.lastSyncedAt ? formatDateTime(cloud.lastSyncedAt) : isConnected ? "等待第一次同步" : "未同步"
+  }`;
 
   refs.signOutBtn.hidden = !isConnected;
   refs.authForm.hidden = isConnected;

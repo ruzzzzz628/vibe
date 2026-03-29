@@ -149,8 +149,14 @@ button {
   line-height: 1.55;
 }
 
-.cloud-meta {
+.cloud-meta,
+.cloud-sync-time {
   font-size: 0.9rem;
+}
+
+.cloud-sync-time {
+  font-weight: 600;
+  color: var(--text);
 }
 
 .auth-form {
