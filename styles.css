@@ -1,0 +1,907 @@
+:root {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --bg-2: #eaf0f8;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: rgba(255, 255, 255, 0.96);
+  --surface-muted: rgba(246, 248, 252, 0.92);
+  --text: #101218;
+  --text-soft: #3e4657;
+  --line: rgba(16, 24, 40, 0.08);
+  --line-strong: rgba(16, 24, 40, 0.12);
+  --accent: #0a84ff;
+  --accent-strong: #0066cc;
+  --accent-soft: #d9ebff;
+  --accent-gojo: #5ac8fa;
+  --success: #21808d;
+  --warning: #a15c07;
+  --danger: #b42318;
+  --shadow-lg: 0 28px 60px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 6px 16px rgba(15, 23, 42, 0.05);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 16% 12%, rgba(90, 200, 250, 0.16), transparent 24%),
+    radial-gradient(circle at 88% 20%, rgba(10, 132, 255, 0.1), transparent 18%),
+    linear-gradient(180deg, #fbfcfe 0%, var(--bg) 44%, var(--bg-2) 100%);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  appearance: none;
+}
+
+.ambient {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 999px;
+  filter: blur(10px);
+  opacity: 0.9;
+}
+
+.ambient-a {
+  top: 3rem;
+  left: 4%;
+  width: 10rem;
+  height: 10rem;
+  background: radial-gradient(circle, rgba(90, 200, 250, 0.22), transparent 72%);
+}
+
+.ambient-b {
+  right: 6%;
+  top: 4rem;
+  width: 14rem;
+  height: 14rem;
+  background: radial-gradient(circle, rgba(10, 132, 255, 0.12), transparent 74%);
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1280px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 28px 0 56px;
+}
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.8)),
+    var(--surface);
+  backdrop-filter: saturate(160%) blur(20px);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hero-panel,
+.command-panel,
+.dashboard-grid,
+.audit-grid {
+  margin-bottom: 22px;
+}
+
+.hero-panel {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.hero-topbar,
+.hero-dashboard,
+.command-panel,
+.mission-panel,
+.activity-panel,
+.insight-panel,
+.audit-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-topbar h1,
+.command-head h2,
+.panel-head h2,
+.group-head h3,
+.food-panel-head h3,
+.food-entry-card h4,
+.meal-group-head strong,
+.snapshot-food-group strong {
+  margin: 0;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "Helvetica Neue",
+    sans-serif;
+  font-weight: 700;
+}
+
+.hero-topbar h1 {
+  font-size: clamp(2.35rem, 5vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.hero-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero-actions,
+.form-actions,
+.inline-form,
+.selector-group,
+.day-strip,
+.mission-badges,
+.group-head,
+.latest-head,
+.snapshot-head,
+.snapshot-meta,
+.audit-head,
+.audit-meta,
+.food-totals,
+.food-entry-row,
+.food-log-item,
+.food-log-meta,
+.meal-group-head {
+  display: flex;
+  gap: 12px;
+}
+
+.eyebrow,
+.panel-pill,
+.stat-label,
+.summary-tile span,
+.insight-card span,
+.field span,
+.type-badge,
+.completion-badge,
+.snapshot-meta span,
+.audit-meta span,
+.food-total-card span {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow,
+.panel-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(10, 132, 255, 0.08);
+  color: var(--accent-strong);
+  border: 1px solid rgba(10, 132, 255, 0.12);
+}
+
+.hero-actions {
+  flex-wrap: wrap;
+  margin-top: 0;
+  justify-content: flex-end;
+}
+
+.hero-dashboard,
+.day-summary,
+.insight-grid,
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.hero-dashboard {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.day-summary,
+.insight-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.executive-strip {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.strip-stat,
+.summary-tile,
+.insight-card,
+.food-total-card,
+.food-entry-card,
+.meal-group,
+.task-card,
+.snapshot-card,
+.audit-card {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.strip-stat,
+.summary-tile,
+.insight-card {
+  padding: 14px 16px;
+  border-radius: 18px;
+}
+
+.stat-label,
+.summary-tile span,
+.insight-card span,
+.field span,
+.food-note,
+.xp-meta,
+.snapshot-card p,
+.audit-card p,
+.empty-state,
+.task-meta,
+.food-log-meta,
+.meal-group-head span,
+.snapshot-foods span,
+.snapshot-head span,
+.audit-head span,
+.snapshot-meta span,
+.audit-meta span {
+  color: var(--text-soft);
+}
+
+.stat-value,
+.summary-tile strong,
+.insight-card strong,
+.food-total-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.strip-stat {
+  display: grid;
+  align-content: space-between;
+  min-height: 86px;
+}
+
+.strip-stat strong {
+  margin-top: 6px;
+  font-size: 1.42rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.next-action-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.next-action-copy {
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+  border: 1px solid rgba(10, 132, 255, 0.12);
+  box-shadow: var(--shadow-sm);
+}
+
+.next-action-copy .eyebrow {
+  margin-bottom: 10px;
+}
+
+.next-action-copy h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.next-action-detail {
+  margin: 10px 0 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+
+.next-action-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.next-action-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(10, 132, 255, 0.12);
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.compact-xp-panel {
+  margin-top: 0;
+  height: 100%;
+}
+
+.xp-panel {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+}
+
+.xp-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.xp-copy strong {
+  font-size: 1.22rem;
+  color: var(--text);
+}
+
+.xp-bar,
+.completion-bar {
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dfe6ef;
+}
+
+.xp-bar {
+  height: 10px;
+}
+
+.completion-bar {
+  height: 12px;
+  margin: 18px 0 20px;
+}
+
+.xp-bar-fill,
+.completion-bar-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 220ms ease;
+}
+
+.primary-btn,
+.ghost-btn,
+.day-chip,
+.food-remove-btn {
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.primary-btn,
+.ghost-btn {
+  padding: 13px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+
+.primary-btn {
+  background: linear-gradient(180deg, #1994ff, var(--accent-strong));
+  color: #fff;
+  box-shadow: 0 12px 20px rgba(10, 132, 255, 0.24);
+}
+
+.ghost-btn {
+  background: #fff;
+  border-color: rgba(16, 24, 40, 0.1);
+  color: var(--text);
+}
+
+.primary-btn:hover,
+.ghost-btn:hover,
+.day-chip:hover,
+.food-remove-btn:hover {
+  transform: translateY(-1px);
+}
+
+.command-panel,
+.mission-panel,
+.activity-panel,
+.insight-panel,
+.audit-panel {
+  padding: 24px;
+}
+
+.command-head,
+.panel-head,
+.latest-head,
+.snapshot-head,
+.audit-head {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compact-field {
+  min-width: 220px;
+}
+
+.compact-field span {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.inline-form input,
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 24, 40, 0.12);
+  background: #fff;
+  color: var(--text);
+}
+
+.inline-form input::placeholder,
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #687387;
+}
+
+.inline-form input:focus,
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: rgba(10, 132, 255, 0.42);
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.12);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 108px;
+}
+
+.field input[readonly] {
+  background: #f5f8fc;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.day-strip {
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.day-chip {
+  min-width: 110px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text-soft);
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+}
+
+.day-chip strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.day-chip.active {
+  border-color: var(--chip-color);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--chip-color) 16%, white),
+    var(--shadow-md);
+}
+
+.dashboard-grid,
+.audit-grid {
+  display: grid;
+  gap: 22px;
+}
+
+.dashboard-grid {
+  grid-template-columns: 1.04fr 0.96fr;
+}
+
+.audit-grid {
+  grid-template-columns: 1fr;
+}
+
+.mission-badges {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.type-badge,
+.completion-badge,
+.panel-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.type-badge {
+  color: #fff;
+}
+
+.summary-tile strong {
+  font-family: inherit;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+}
+
+.mission-groups,
+.task-list,
+.snapshot-list,
+.audit-list,
+.food-log,
+.snapshot-food-groups,
+.meal-food-list {
+  display: grid;
+  gap: 14px;
+}
+
+.mission-group,
+.food-panel {
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+}
+
+.group-head {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.group-head h3 {
+  font-size: 1.08rem;
+}
+
+.task-card {
+  border-radius: 22px;
+}
+
+.task-card.done {
+  border-color: rgba(33, 128, 141, 0.18);
+  background: #f1fbfc;
+}
+
+.task-toggle {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 14px;
+  align-items: start;
+  padding: 16px;
+}
+
+.task-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.task-check {
+  width: 22px;
+  height: 22px;
+  margin-top: 3px;
+  border-radius: 7px;
+  border: 1px solid rgba(16, 24, 40, 0.14);
+  background: #fff;
+}
+
+.task-toggle input:checked + .task-check {
+  background: linear-gradient(180deg, var(--accent-gojo), var(--accent));
+  border-color: transparent;
+  box-shadow: 0 0 0 4px rgba(90, 200, 250, 0.16);
+}
+
+.task-copy {
+  display: grid;
+  gap: 7px;
+}
+
+.task-title {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.task-meta.muted {
+  opacity: 0.85;
+}
+
+.task-xp {
+  white-space: nowrap;
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.activity-form {
+  display: grid;
+  gap: 16px;
+}
+
+.food-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.food-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.food-note {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+.food-totals {
+  flex-wrap: wrap;
+}
+
+.food-total-card {
+  min-width: 148px;
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.food-entry-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.food-entry-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.food-entry-row {
+  align-items: end;
+}
+
+.food-entry-row .field,
+.custom-food-row .field {
+  height: 100%;
+}
+
+.small-field {
+  min-width: 124px;
+}
+
+.custom-food-row {
+  display: grid;
+  grid-template-columns: 0.78fr 1.2fr 0.72fr 0.72fr;
+}
+
+.meal-group,
+.snapshot-food-group {
+  display: grid;
+  gap: 12px;
+}
+
+.meal-group {
+  padding: 14px;
+  border-radius: 20px;
+}
+
+.meal-group-head {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.snapshot-foods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.snapshot-foods span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(10, 132, 255, 0.12);
+}
+
+.food-log-item {
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 20px;
+}
+
+.food-log-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.food-log-copy strong {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.food-log-meta {
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.food-remove-btn {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 35, 24, 0.12);
+  background: #fff5f3;
+  color: #9f281f;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.latest-panel {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.snapshot-card,
+.audit-card {
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.snapshot-card p,
+.audit-card p {
+  margin: 10px 0 12px;
+  line-height: 1.65;
+}
+
+.snapshot-meta,
+.audit-meta {
+  flex-wrap: wrap;
+}
+
+.empty-state {
+  padding: 20px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px dashed rgba(16, 24, 40, 0.16);
+}
+
+@media (max-width: 1080px) {
+  .hero-panel,
+  .dashboard-grid,
+  .audit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .executive-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .next-action-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100% - 20px, 1280px);
+    padding-top: 18px;
+  }
+
+  .hero-panel,
+  .command-panel,
+  .mission-panel,
+  .activity-panel,
+  .insight-panel,
+  .audit-panel {
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .hero-topbar h1 {
+    font-size: clamp(2.2rem, 12vw, 3.6rem);
+  }
+
+  .executive-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .day-summary,
+  .insight-grid,
+  .form-grid,
+  .food-entry-grid,
+  .custom-food-row {
+    grid-template-columns: 1fr;
+  }
+
+  .next-action-card {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-topbar,
+  .hero-actions,
+  .form-actions,
+  .food-panel-head,
+  .food-entry-row,
+  .command-head,
+  .panel-head,
+  .latest-head,
+  .snapshot-head,
+  .audit-head,
+  .meal-group-head,
+  .food-log-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .task-toggle {
+    grid-template-columns: auto auto 1fr;
+  }
+
+  .task-xp {
+    grid-column: 3;
+  }
+
+  .compact-field,
+  .small-field,
+  .food-total-card {
+    min-width: 0;
+    width: 100%;
+  }
+}
