@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>升級系統</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="gojo-theme">
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <section class="hero-panel panel">
+      <div class="hero-topbar">
+        <div>
+          <p class="eyebrow">RUS · 六眼模式</p>
+          <h1>進度總覽</h1>
+        </div>
+        <div class="hero-actions">
+          <button class="primary-btn" id="jumpTodayBtn" type="button">跳返今日</button>
+        </div>
+      </div>
+
+      <div class="hero-dashboard">
+        <div class="executive-strip">
+          <article class="strip-stat">
+            <span>完成任務數</span>
+            <strong id="completedTasksValue">0</strong>
+          </article>
+          <article class="strip-stat">
+            <span>已儲存報告</span>
+            <strong id="savedReportsValue">0</strong>
+          </article>
+          <article class="strip-stat">
+            <span>紀錄事件</span>
+            <strong id="auditEventsValue">0</strong>
+          </article>
+          <article class="strip-stat">
+            <span>本週完成率</span>
+            <strong id="weeklyCompletionValue">0%</strong>
+          </article>
+          <article class="strip-stat">
+            <span class="stat-label">等級</span>
+            <strong class="stat-value" id="levelValue">1</strong>
+          </article>
+          <article class="strip-stat">
+            <span class="stat-label">階級</span>
+            <strong class="stat-value" id="rankValue">E</strong>
+          </article>
+          <article class="strip-stat">
+            <span class="stat-label">連勝</span>
+            <strong class="stat-value" id="streakValue">0日</strong>
+          </article>
+        </div>
+      </div>
+
+      <div class="next-action-card">
+        <div class="next-action-copy">
+          <p class="eyebrow">下一步</p>
+          <h2 id="nextActionTitle">今日第一個未完成任務</h2>
+          <p class="next-action-detail" id="nextActionDetail">系統會將最值得即刻做嘅一項擺喺呢度。</p>
+          <div class="next-action-meta">
+            <span class="next-action-pill" id="nextActionCategory">任務分類</span>
+            <span class="next-action-pill" id="nextActionXp">+0 XP</span>
+            <span class="next-action-pill" id="nextActionProgress">0 / 0</span>
+          </div>
+        </div>
+        <div class="xp-panel compact-xp-panel">
+          <div class="xp-copy">
+            <span>總 XP</span>
+            <strong id="xpValue">0 XP</strong>
+          </div>
+          <div class="xp-bar" aria-hidden="true">
+            <div class="xp-bar-fill" id="xpBarFill"></div>
+          </div>
+          <p class="xp-meta" id="xpMeta">距離 D 階仲有幾遠</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="command-panel panel">
+      <div class="command-head">
+        <div>
+          <p class="eyebrow">今日導航</p>
+          <h2 id="missionHeading">今日任務</h2>
+        </div>
+        <div class="selector-group">
+          <label class="field compact-field" for="dateInput">
+            <span>日期</span>
+            <input id="dateInput" type="date">
+          </label>
+        </div>
+      </div>
+
+      <div class="day-strip" id="dayStrip" aria-label="每週任務選擇"></div>
+    </section>
+
+    <section class="dashboard-grid">
+      <section class="mission-panel panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">任務領域</p>
+            <h2 id="dayTitle">星期一任務</h2>
+          </div>
+          <div class="mission-badges">
+            <span class="type-badge" id="missionTypeBadge">健身</span>
+            <span class="completion-badge" id="completionBadge">0% 完成</span>
+          </div>
+        </div>
+
+        <div class="day-summary">
+          <article class="summary-tile">
+            <span>卡路里</span>
+            <strong id="calorieTarget">0</strong>
+          </article>
+          <article class="summary-tile">
+            <span>蛋白質</span>
+            <strong id="proteinTarget">0g</strong>
+          </article>
+          <article class="summary-tile">
+            <span>今日 XP</span>
+            <strong id="dailyXpValue">0 / 0</strong>
+          </article>
+        </div>
+
+        <div class="completion-bar" aria-hidden="true">
+          <div class="completion-bar-fill" id="completionBarFill"></div>
+        </div>
+
+        <div class="mission-groups" id="missionGroups"></div>
+      </section>
+
+      <section class="activity-panel panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">行動記錄</p>
+            <h2>儲存今日報告</h2>
+          </div>
+          <span class="panel-pill">有版本</span>
+        </div>
+
+        <form class="activity-form" id="activityForm">
+          <div class="form-grid">
+            <label class="field">
+              <span>精神 / 10</span>
+              <input name="energy" type="number" min="1" max="10" placeholder="7">
+            </label>
+            <label class="field">
+              <span>瞓咗幾多個鐘</span>
+              <input name="sleepHours" type="number" min="0" max="24" step="0.5" placeholder="7.5">
+            </label>
+            <label class="field">
+              <span>體重 (kg)</span>
+              <input name="weight" type="number" min="0" max="300" step="0.1" placeholder="72.4">
+            </label>
+            <label class="field">
+              <span>步數</span>
+              <input name="steps" type="number" min="0" step="100" placeholder="6000">
+            </label>
+            <label class="field">
+              <span>總卡路里</span>
+              <input name="calories" type="number" min="0" step="10" placeholder="2250" readonly>
+            </label>
+            <label class="field">
+              <span>總蛋白質 (g)</span>
+              <input name="protein" type="number" min="0" step="1" placeholder="155" readonly>
+            </label>
+          </div>
+
+          <section class="food-panel">
+            <div class="food-panel-head">
+              <div>
+                <h3>今日食咗咩</h3>
+                <p class="food-note">用常見食物估算 calories 同 protein。唔啱你食嗰樣，就手動加入自訂食物。</p>
+              </div>
+              <div class="food-totals">
+                <article class="food-total-card">
+                  <span>卡路里</span>
+                  <strong id="foodCaloriesValue">0 kcal</strong>
+                </article>
+                <article class="food-total-card">
+                  <span>蛋白質</span>
+                  <strong id="foodProteinValue">0 g</strong>
+                </article>
+              </div>
+            </div>
+
+            <div class="food-entry-grid">
+              <div class="food-entry-card">
+                <h4>由清單加入</h4>
+              <div class="food-entry-row">
+                  <label class="field">
+                    <span>搜尋食物</span>
+                    <input id="foodSearch" type="text" placeholder="例如：茶記、牛腩飯、雞胸、意粉">
+                  </label>
+                </div>
+                <div class="food-entry-row">
+                  <label class="field">
+                    <span>食物</span>
+                    <select id="foodSelect">
+                      <option value="">揀一樣食物</option>
+                    </select>
+                  </label>
+                  <label class="field small-field">
+                    <span>屬於邊餐</span>
+                    <select id="mealSelect"></select>
+                  </label>
+                  <label class="field small-field">
+                    <span>份量</span>
+                    <input id="foodServings" type="number" min="0.25" step="0.25" value="1">
+                  </label>
+                </div>
+                <button class="ghost-btn" id="addFoodBtn" type="button">加入飲食紀錄</button>
+              </div>
+
+              <div class="food-entry-card">
+                <h4>加入自訂食物</h4>
+                <div class="food-entry-row custom-food-row">
+                  <label class="field small-field">
+                    <span>屬於邊餐</span>
+                    <select id="customFoodMeal"></select>
+                  </label>
+                  <label class="field">
+                    <span>食物名</span>
+                    <input id="customFoodName" type="text" maxlength="60" placeholder="例如：公司飯盒、屋企煲湯">
+                  </label>
+                  <label class="field small-field">
+                    <span>卡路里</span>
+                    <input id="customFoodCalories" type="number" min="0" step="1" placeholder="450">
+                  </label>
+                  <label class="field small-field">
+                    <span>蛋白質</span>
+                    <input id="customFoodProtein" type="number" min="0" step="1" placeholder="32">
+                  </label>
+                </div>
+                <button class="ghost-btn" id="addCustomFoodBtn" type="button">加入自訂食物</button>
+              </div>
+            </div>
+
+            <div class="food-log" id="foodList"></div>
+          </section>
+
+          <label class="field">
+            <span>今日主要活動</span>
+            <input name="activity" type="text" maxlength="120" placeholder="上半身力量訓練 + 午飯後行路">
+          </label>
+
+          <label class="field">
+            <span>今日做得好嘅位</span>
+            <textarea name="wins" rows="3" placeholder="今日邊樣做得好？"></textarea>
+          </label>
+
+          <label class="field">
+            <span>卡關位</span>
+            <textarea name="blockers" rows="3" placeholder="今日有咩位拖慢咗你？"></textarea>
+          </label>
+
+          <label class="field">
+            <span>系統備註</span>
+            <textarea name="notes" rows="4" placeholder="補充 notes、比賽觀察、rehab 情況、飲食調整等等"></textarea>
+          </label>
+
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">儲存今日快照</button>
+            <button class="ghost-btn" id="clearDayBtn" type="button">重設呢一日</button>
+          </div>
+        </form>
+
+        <div class="latest-panel">
+          <div class="latest-head">
+            <h3>已儲存快照</h3>
+            <span id="snapshotCount">0 個</span>
+          </div>
+          <div class="snapshot-list" id="snapshotList"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="audit-grid">
+      <section class="audit-panel panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">痕跡紀錄</p>
+            <h2>每次輸入同任務更新都會留底</h2>
+          </div>
+          <button class="ghost-btn" id="exportAuditBtn" type="button">匯出紀錄 JSON</button>
+        </div>
+        <div class="audit-list" id="auditList"></div>
+      </section>
+    </section>
+  </main>
+
+  <template id="taskTemplate">
+    <article class="task-card">
+      <label class="task-toggle">
+        <input type="checkbox">
+        <span class="task-check"></span>
+        <span class="task-copy">
+          <strong class="task-title"></strong>
+          <span class="task-meta"></span>
+        </span>
+        <span class="task-xp"></span>
+      </label>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
