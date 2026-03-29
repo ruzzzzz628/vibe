@@ -424,6 +424,7 @@ const refs = {
   authEmail: document.getElementById("authEmail"),
   authSubmitBtn: document.getElementById("authSubmitBtn"),
   signOutBtn: document.getElementById("signOutBtn"),
+  cloudActions: document.querySelector(".cloud-actions"),
   cloudStatus: document.getElementById("cloudStatus"),
   cloudDetail: document.getElementById("cloudDetail"),
   cloudMeta: document.getElementById("cloudMeta")
@@ -894,6 +895,8 @@ function renderCloudMeta() {
       : "填好 Supabase config 後先會出現雲端同步";
 
   refs.signOutBtn.hidden = !cloud.user;
+  refs.authForm.hidden = Boolean(cloud.user);
+  refs.cloudActions.hidden = !cloud.user;
   refs.authEmail.disabled = Boolean(cloud.user);
   refs.authSubmitBtn.disabled = Boolean(cloud.user);
 }

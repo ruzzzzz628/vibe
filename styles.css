@@ -161,8 +161,19 @@ button {
   justify-content: flex-end;
 }
 
+.auth-form[hidden],
+.cloud-actions[hidden] {
+  display: none;
+}
+
 .auth-field {
   min-width: 260px;
+}
+
+.cloud-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .hero-topbar,
@@ -926,6 +937,7 @@ button {
   .cloud-strip,
   .hero-actions,
   .auth-form,
+  .cloud-actions,
   .form-actions,
   .food-panel-head,
   .food-entry-row,
