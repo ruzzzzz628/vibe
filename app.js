@@ -361,6 +361,7 @@ const cloud = {
   session: null,
   user: null,
   syncTimer: null,
+  pollTimer: null,
   isHydrating: false,
   status: "本機模式",
   detail: "而家資料只會留喺你部裝置。",
@@ -456,6 +457,16 @@ function bindEvents() {
   refs.exportAuditBtn.addEventListener("click", exportAudit);
   refs.authForm.addEventListener("submit", handleAuthSubmit);
   refs.signOutBtn.addEventListener("click", handleSignOut);
+  window.addEventListener("focus", () => {
+    if (cloud.user) {
+      hydrateCloudState({ silent: true });
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && cloud.user) {
+      hydrateCloudState({ silent: true });
+    }
+  });
 }
 
 async function initializeCloud() {
@@ -477,10 +488,12 @@ async function initializeCloud() {
     cloud.session = session;
     cloud.user = session?.user || null;
     if (cloud.user) {
+      startCloudPolling();
       setCloudStatus("雲端已連接", `已登入 ${cloud.user.email || "呢個帳戶"}，會自動同步。`);
       renderCloudMeta();
       await hydrateCloudState();
     } else {
+      stopCloudPolling();
       setCloudStatus("本機模式", "未登入 Supabase，資料只會留喺呢部裝置。");
       renderCloudMeta();
     }
@@ -498,6 +511,7 @@ async function initializeCloud() {
   cloud.user = data.session?.user || null;
 
   if (cloud.user) {
+    startCloudPolling();
     setCloudStatus("雲端已連接", `已登入 ${cloud.user.email || "呢個帳戶"}，會自動同步。`);
     await hydrateCloudState();
   } else {
@@ -555,7 +569,7 @@ async function handleSignOut() {
   renderCloudMeta();
 }
 
-async function hydrateCloudState() {
+async function hydrateCloudState({ silent = false } = {}) {
   if (!cloud.client || !cloud.user) {
     return;
   }
@@ -569,23 +583,34 @@ async function hydrateCloudState() {
 
   if (error) {
     cloud.isHydrating = false;
-    setCloudStatus("載入雲端失敗", error.message);
-    renderCloudMeta();
+    if (!silent) {
+      setCloudStatus("載入雲端失敗", error.message);
+      renderCloudMeta();
+    }
     return;
   }
 
   if (data?.payload) {
-    applyState(normalizeAppState(data.payload));
-    cloud.lastSyncedAt = data.updated_at || "";
-    persistLocalState();
-    setCloudStatus("雲端已同步", `已載入 ${cloud.user.email || "你個帳戶"} 嘅最新資料。`);
+    const hasNewRemoteState = Boolean(data.updated_at && data.updated_at !== cloud.lastSyncedAt);
+    if (hasNewRemoteState || !cloud.lastSyncedAt) {
+      applyState(normalizeAppState(data.payload));
+      persistLocalState();
+    }
+    cloud.lastSyncedAt = data.updated_at || cloud.lastSyncedAt;
+    if (!silent) {
+      setCloudStatus("雲端已同步", `已載入 ${cloud.user.email || "你個帳戶"} 嘅最新資料。`);
+    }
   } else {
     await saveCloudState({ immediate: true, silent: true });
-    setCloudStatus("雲端已初始化", "已將你而家部裝置嘅資料上傳去 Supabase。");
+    if (!silent) {
+      setCloudStatus("雲端已初始化", "已將你而家部裝置嘅資料上傳去 Supabase。");
+    }
   }
 
   cloud.isHydrating = false;
-  renderCloudMeta();
+  if (!silent) {
+    renderCloudMeta();
+  }
   render();
 }
 
@@ -1517,4 +1542,20 @@ function persistAllState() {
 function setCloudStatus(status, detail) {
   cloud.status = status;
   cloud.detail = detail;
+}
+
+function startCloudPolling() {
+  stopCloudPolling();
+  cloud.pollTimer = window.setInterval(() => {
+    if (!document.hidden && cloud.user) {
+      hydrateCloudState({ silent: true });
+    }
+  }, 15000);
+}
+
+function stopCloudPolling() {
+  if (cloud.pollTimer) {
+    clearInterval(cloud.pollTimer);
+    cloud.pollTimer = null;
+  }
 }
