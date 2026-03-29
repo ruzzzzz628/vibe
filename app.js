@@ -464,8 +464,18 @@ function bindEvents() {
     }
   });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && cloud.user) {
-      hydrateCloudState({ silent: true });
+    if (!cloud.user) {
+      return;
+    }
+    if (document.hidden) {
+      saveCloudState({ immediate: true, silent: true });
+      return;
+    }
+    hydrateCloudState({ silent: true });
+  });
+  window.addEventListener("pagehide", () => {
+    if (cloud.user) {
+      saveCloudState({ immediate: true, silent: true });
     }
   });
 }
@@ -624,6 +634,7 @@ async function saveCloudState({ immediate = false, silent = false } = {}) {
   }
 
   const run = async () => {
+    cloud.syncTimer = null;
     const payload = serializeState();
     const updatedAt = new Date().toISOString();
     const { error } = await cloud.client.from(CLOUD_TABLE).upsert(
@@ -777,7 +788,7 @@ function handleReportSave(event) {
     title: `已儲存活動快照 第 ${version} 版`,
     detail: summarizeReport(report)
   });
-  persistAllState();
+  persistAllState({ immediate: true });
   render();
 }
 
@@ -801,7 +812,7 @@ function handleDayReset() {
     });
   }
 
-  persistAllState();
+  persistAllState({ immediate: true });
   render();
 }
 
@@ -1145,7 +1156,7 @@ function toggleTask(dateKey, task) {
     title: `${!current ? "已完成任務" : "取消勾選任務"} · ${task.task}`,
     detail: `${!current ? "加咗" : "扣返"} ${task.xp} XP，日期係 ${formatReadableDate(dateKey)}。`
   });
-  persistAllState();
+  persistAllState({ immediate: true });
   render();
 }
 
@@ -1538,9 +1549,9 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.drafts, JSON.stringify(state.drafts));
 }
 
-function persistAllState() {
+function persistAllState({ immediate = false } = {}) {
   persistLocalState();
-  saveCloudState();
+  saveCloudState({ immediate });
 }
 
 function setCloudStatus(status, detail) {
