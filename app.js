@@ -360,6 +360,7 @@ const cloud = {
   client: null,
   session: null,
   user: null,
+  channel: null,
   syncTimer: null,
   pollTimer: null,
   isHydrating: false,
@@ -488,11 +489,13 @@ async function initializeCloud() {
     cloud.session = session;
     cloud.user = session?.user || null;
     if (cloud.user) {
+      startRealtimeSubscription();
       startCloudPolling();
       setCloudStatus("雲端已連接", `已登入 ${cloud.user.email || "呢個帳戶"}，會自動同步。`);
       renderCloudMeta();
       await hydrateCloudState();
     } else {
+      stopRealtimeSubscription();
       stopCloudPolling();
       setCloudStatus("本機模式", "未登入 Supabase，資料只會留喺呢部裝置。");
       renderCloudMeta();
@@ -511,6 +514,7 @@ async function initializeCloud() {
   cloud.user = data.session?.user || null;
 
   if (cloud.user) {
+    startRealtimeSubscription();
     startCloudPolling();
     setCloudStatus("雲端已連接", `已登入 ${cloud.user.email || "呢個帳戶"}，會自動同步。`);
     await hydrateCloudState();
@@ -1542,6 +1546,47 @@ function persistAllState() {
 function setCloudStatus(status, detail) {
   cloud.status = status;
   cloud.detail = detail;
+}
+
+function startRealtimeSubscription() {
+  if (!cloud.client || !cloud.user) {
+    return;
+  }
+
+  stopRealtimeSubscription();
+
+  cloud.channel = cloud.client
+    .channel(`app-state-${cloud.user.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: CLOUD_TABLE,
+        filter: `user_id=eq.${cloud.user.id}`
+      },
+      async (payload) => {
+        const nextUpdatedAt = payload.new?.updated_at || payload.old?.updated_at || "";
+        if (nextUpdatedAt && nextUpdatedAt === cloud.lastSyncedAt) {
+          return;
+        }
+        await hydrateCloudState({ silent: true });
+      }
+    )
+    .subscribe((status) => {
+      if (status === "CHANNEL_ERROR") {
+        setCloudStatus("Realtime 連接失敗", "已自動退回輪詢同步。你仍然可以 refresh / 切返個頁面更新資料。");
+        renderCloudMeta();
+      }
+    });
+}
+
+function stopRealtimeSubscription() {
+  if (!cloud.client || !cloud.channel) {
+    return;
+  }
+  cloud.client.removeChannel(cloud.channel);
+  cloud.channel = null;
 }
 
 function startCloudPolling() {

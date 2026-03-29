@@ -6,6 +6,20 @@ create table if not exists public.app_state (
   updated_at timestamptz not null default now()
 );
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'app_state'
+  ) then
+    alter publication supabase_realtime add table public.app_state;
+  end if;
+end
+$$;
+
 alter table public.app_state enable row level security;
 
 drop policy if exists "Users can read their own app_state" on public.app_state;
