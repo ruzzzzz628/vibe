@@ -5,7 +5,10 @@ const STORAGE_KEYS = {
   audit: "arise-audit",
   drafts: "arise-report-drafts"
 };
+
 const PLAYER_NICKNAME = "RUS";
+const CLOUD_TABLE = "app_state";
+const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {};
 
 const RANKS = [
   { rank: "E", min: 0, title: "新手獵人", color: "#8fa4ff" },
@@ -126,9 +129,7 @@ const WEEKLY_QUESTS = {
       {
         cat: "恢復",
         icon: "🌙",
-        tasks: [
-          { id: "wed-r1", task: "11:30pm 前瞓", xp: 40 }
-        ]
+        tasks: [{ id: "wed-r1", task: "11:30pm 前瞓", xp: 40 }]
       }
     ]
   },
@@ -316,6 +317,7 @@ const FOOD_LIBRARY = [
   { id: "broccoli", name: "西蘭花", serving: "100g", calories: 34, protein: 2.8 },
   { id: "protein-bar", name: "Protein Bar", serving: "1 條", calories: 210, protein: 20 }
 ];
+
 const MEAL_SLOTS = [
   { id: "breakfast", label: "早餐" },
   { id: "lunch", label: "午餐" },
@@ -345,12 +347,24 @@ const defaultProfile = {
   level: 1
 };
 
-const state = {
+const state = normalizeAppState({
   profile: loadJson(STORAGE_KEYS.profile, defaultProfile),
   taskState: loadJson(STORAGE_KEYS.taskState, {}),
   reports: loadJson(STORAGE_KEYS.reports, {}),
   audit: loadJson(STORAGE_KEYS.audit, []),
   drafts: loadJson(STORAGE_KEYS.drafts, {})
+});
+
+const cloud = {
+  configured: Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey && window.supabase?.createClient),
+  client: null,
+  session: null,
+  user: null,
+  syncTimer: null,
+  isHydrating: false,
+  status: "本機模式",
+  detail: "而家資料只會留喺你部裝置。",
+  lastSyncedAt: ""
 };
 
 const refs = {
@@ -400,22 +414,27 @@ const refs = {
   nextActionXp: document.getElementById("nextActionXp"),
   nextActionProgress: document.getElementById("nextActionProgress"),
   auditList: document.getElementById("auditList"),
-  taskTemplate: document.getElementById("taskTemplate")
+  taskTemplate: document.getElementById("taskTemplate"),
+  authForm: document.getElementById("authForm"),
+  authEmail: document.getElementById("authEmail"),
+  authSubmitBtn: document.getElementById("authSubmitBtn"),
+  signOutBtn: document.getElementById("signOutBtn"),
+  cloudStatus: document.getElementById("cloudStatus"),
+  cloudDetail: document.getElementById("cloudDetail"),
+  cloudMeta: document.getElementById("cloudMeta")
 };
 
 let selectedDate = getTodayKey();
 
 initialize();
 
-function initialize() {
-  state.profile.alias = PLAYER_NICKNAME;
-  persist(STORAGE_KEYS.profile, state.profile);
+async function initialize() {
   refs.dateInput.value = selectedDate;
   populateMealSelects();
   populateFoodSelect();
-  renderDayStrip();
-  render();
   bindEvents();
+  render();
+  await initializeCloud();
 }
 
 function bindEvents() {
@@ -435,6 +454,183 @@ function bindEvents() {
     render();
   });
   refs.exportAuditBtn.addEventListener("click", exportAudit);
+  refs.authForm.addEventListener("submit", handleAuthSubmit);
+  refs.signOutBtn.addEventListener("click", handleSignOut);
+}
+
+async function initializeCloud() {
+  if (!cloud.configured) {
+    setCloudStatus("未連接 Supabase", "填好 `supabase-config.js` 之後，手機同 desktop 先會同步。");
+    renderCloudMeta();
+    return;
+  }
+
+  cloud.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
+
+  cloud.client.auth.onAuthStateChange(async (_event, session) => {
+    cloud.session = session;
+    cloud.user = session?.user || null;
+    if (cloud.user) {
+      setCloudStatus("雲端已連接", `已登入 ${cloud.user.email || "呢個帳戶"}，會自動同步。`);
+      renderCloudMeta();
+      await hydrateCloudState();
+    } else {
+      setCloudStatus("本機模式", "未登入 Supabase，資料只會留喺呢部裝置。");
+      renderCloudMeta();
+    }
+    render();
+  });
+
+  const { data, error } = await cloud.client.auth.getSession();
+  if (error) {
+    setCloudStatus("Supabase 連接失敗", error.message);
+    renderCloudMeta();
+    return;
+  }
+
+  cloud.session = data.session;
+  cloud.user = data.session?.user || null;
+
+  if (cloud.user) {
+    setCloudStatus("雲端已連接", `已登入 ${cloud.user.email || "呢個帳戶"}，會自動同步。`);
+    await hydrateCloudState();
+  } else {
+    setCloudStatus("未登入 Supabase", "輸入 email 收 magic link，之後你手機同 desktop 會睇到同一份資料。");
+  }
+
+  renderCloudMeta();
+  render();
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+
+  if (!cloud.client) {
+    setCloudStatus("未連接 Supabase", "先填 `supabase-config.js` 先可以登入。");
+    renderCloudMeta();
+    return;
+  }
+
+  const email = refs.authEmail.value.trim();
+  if (!email) {
+    setCloudStatus("請輸入 email", "用 magic link 登入之後，資料會自動同步。");
+    renderCloudMeta();
+    return;
+  }
+
+  refs.authSubmitBtn.disabled = true;
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await cloud.client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: redirectTo }
+  });
+  refs.authSubmitBtn.disabled = false;
+
+  if (error) {
+    setCloudStatus("登入連結送唔到", error.message);
+  } else {
+    setCloudStatus("Magic link 已送出", `去 ${email} 開信，登入完就會自動同步。`);
+  }
+
+  renderCloudMeta();
+}
+
+async function handleSignOut() {
+  if (!cloud.client) {
+    return;
+  }
+
+  const { error } = await cloud.client.auth.signOut();
+  if (error) {
+    setCloudStatus("登出失敗", error.message);
+  } else {
+    setCloudStatus("已登出", "而家返咗本機模式，資料仍然會保留喺本 browser。");
+  }
+  renderCloudMeta();
+}
+
+async function hydrateCloudState() {
+  if (!cloud.client || !cloud.user) {
+    return;
+  }
+
+  cloud.isHydrating = true;
+  const { data, error } = await cloud.client
+    .from(CLOUD_TABLE)
+    .select("payload, updated_at")
+    .eq("user_id", cloud.user.id)
+    .maybeSingle();
+
+  if (error) {
+    cloud.isHydrating = false;
+    setCloudStatus("載入雲端失敗", error.message);
+    renderCloudMeta();
+    return;
+  }
+
+  if (data?.payload) {
+    applyState(normalizeAppState(data.payload));
+    cloud.lastSyncedAt = data.updated_at || "";
+    persistLocalState();
+    setCloudStatus("雲端已同步", `已載入 ${cloud.user.email || "你個帳戶"} 嘅最新資料。`);
+  } else {
+    await saveCloudState({ immediate: true, silent: true });
+    setCloudStatus("雲端已初始化", "已將你而家部裝置嘅資料上傳去 Supabase。");
+  }
+
+  cloud.isHydrating = false;
+  renderCloudMeta();
+  render();
+}
+
+async function saveCloudState({ immediate = false, silent = false } = {}) {
+  if (!cloud.client || !cloud.user || cloud.isHydrating) {
+    return;
+  }
+
+  const run = async () => {
+    const payload = serializeState();
+    const updatedAt = new Date().toISOString();
+    const { error } = await cloud.client.from(CLOUD_TABLE).upsert(
+      {
+        user_id: cloud.user.id,
+        payload,
+        updated_at: updatedAt
+      },
+      { onConflict: "user_id" }
+    );
+
+    if (error) {
+      if (!silent) {
+        setCloudStatus("同步失敗", error.message);
+        renderCloudMeta();
+      }
+      return;
+    }
+
+    cloud.lastSyncedAt = updatedAt;
+    if (!silent) {
+      setCloudStatus("已同步到 Supabase", cloud.user.email || "資料已上雲");
+      renderCloudMeta();
+    }
+  };
+
+  if (immediate) {
+    clearTimeout(cloud.syncTimer);
+    await run();
+    return;
+  }
+
+  clearTimeout(cloud.syncTimer);
+  cloud.syncTimer = setTimeout(() => {
+    run();
+  }, 700);
 }
 
 function populateMealSelects() {
@@ -546,14 +742,13 @@ function handleReportSave(event) {
 
   state.reports[selectedDate] = [...reportList, entry];
   state.drafts[selectedDate] = report;
-  persist(STORAGE_KEYS.reports, state.reports);
-  persist(STORAGE_KEYS.drafts, state.drafts);
   pushAudit({
     type: "report",
     date: selectedDate,
     title: `已儲存活動快照 第 ${version} 版`,
     detail: summarizeReport(report)
   });
+  persistAllState();
   render();
 }
 
@@ -567,10 +762,6 @@ function handleDayReset() {
   delete state.drafts[selectedDate];
 
   recalculateProfileTotals();
-  persist(STORAGE_KEYS.taskState, state.taskState);
-  persist(STORAGE_KEYS.reports, state.reports);
-  persist(STORAGE_KEYS.drafts, state.drafts);
-  persist(STORAGE_KEYS.profile, state.profile);
 
   if (hadTasks || hadReports || hadDraft) {
     pushAudit({
@@ -581,11 +772,13 @@ function handleDayReset() {
     });
   }
 
+  persistAllState();
   render();
 }
 
 function render() {
   refs.dateInput.value = selectedDate;
+  renderCloudMeta();
   renderHeroStats();
   renderNextAction();
   renderDayStrip();
@@ -596,14 +789,26 @@ function render() {
   renderAudit();
 }
 
+function renderCloudMeta() {
+  refs.cloudStatus.textContent = cloud.status;
+  refs.cloudDetail.textContent = cloud.detail;
+  refs.cloudMeta.textContent = cloud.user
+    ? `${cloud.user.email || "已登入"}${cloud.lastSyncedAt ? ` · 最後同步 ${formatDateTime(cloud.lastSyncedAt)}` : ""}`
+    : cloud.configured
+      ? "登入後會自動跨裝置同步"
+      : "填好 Supabase config 後先會出現雲端同步";
+
+  refs.signOutBtn.hidden = !cloud.user;
+  refs.authEmail.disabled = Boolean(cloud.user);
+  refs.authSubmitBtn.disabled = Boolean(cloud.user);
+}
+
 function renderHeroStats() {
   const rank = getCurrentRank(state.profile.totalXP);
   const nextRank = getNextRank(rank);
   const level = Math.floor(state.profile.totalXP / 180) + 1;
 
   state.profile.level = level;
-  persist(STORAGE_KEYS.profile, state.profile);
-
   refs.levelValue.textContent = level;
   refs.rankValue.textContent = `${rank.rank} · ${rank.title}`;
   refs.rankValue.style.color = rank.color;
@@ -740,17 +945,15 @@ function renderActivityForm() {
   refs.customFoodMeal.value = "dinner";
   const source = getReportForSelectedDate();
 
-  if (source) {
-    Object.entries(source).forEach(([key, value]) => {
-      if (key === "foods") {
-        return;
-      }
-      const field = refs.activityForm.elements.namedItem(key);
-      if (field) {
-        field.value = value;
-      }
-    });
-  }
+  Object.entries(source).forEach(([key, value]) => {
+    if (key === "foods") {
+      return;
+    }
+    const field = refs.activityForm.elements.namedItem(key);
+    if (field) {
+      field.value = value;
+    }
+  });
 
   renderFoodLog(source.foods || []);
 }
@@ -898,9 +1101,7 @@ function renderAudit() {
 }
 
 function toggleTask(dateKey, task) {
-  const dateState = {
-    ...(state.taskState[dateKey] || {})
-  };
+  const dateState = { ...(state.taskState[dateKey] || {}) };
   const current = Boolean(dateState[task.id]?.done);
   dateState[task.id] = {
     done: !current,
@@ -909,16 +1110,13 @@ function toggleTask(dateKey, task) {
   state.taskState[dateKey] = dateState;
 
   recalculateProfileTotals();
-  persist(STORAGE_KEYS.taskState, state.taskState);
-  persist(STORAGE_KEYS.profile, state.profile);
-
   pushAudit({
     type: "quest",
     date: dateKey,
     title: `${!current ? "已完成任務" : "取消勾選任務"} · ${task.task}`,
     detail: `${!current ? "加咗" : "扣返"} ${task.xp} XP，日期係 ${formatReadableDate(dateKey)}。`
   });
-
+  persistAllState();
   render();
 }
 
@@ -954,7 +1152,6 @@ function pushAudit(entry) {
     ...entry
   });
   state.audit = state.audit.slice(-300);
-  persist(STORAGE_KEYS.audit, state.audit);
 }
 
 function getSelectedQuest() {
@@ -1026,13 +1223,9 @@ function loadJson(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
-  } catch (error) {
+  } catch {
     return fallback;
   }
-}
-
-function persist(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
 }
 
 function getReportForSelectedDate() {
@@ -1067,7 +1260,7 @@ function normalizeReport(source) {
 
 function saveDraftReport(report) {
   state.drafts[selectedDate] = normalizeReport(report);
-  persist(STORAGE_KEYS.drafts, state.drafts);
+  persistAllState();
 }
 
 function calculateNutritionTotals(foods) {
@@ -1273,4 +1466,55 @@ function formatAuditType(type) {
     quest: "任務"
   };
   return labels[type] || type;
+}
+
+function normalizeAppState(source) {
+  return {
+    profile: {
+      ...defaultProfile,
+      ...(source?.profile || {}),
+      alias: PLAYER_NICKNAME
+    },
+    taskState: source?.taskState && typeof source.taskState === "object" ? source.taskState : {},
+    reports: source?.reports && typeof source.reports === "object" ? source.reports : {},
+    audit: Array.isArray(source?.audit) ? source.audit.slice(-300) : [],
+    drafts: source?.drafts && typeof source.drafts === "object" ? source.drafts : {}
+  };
+}
+
+function applyState(nextState) {
+  state.profile = nextState.profile;
+  state.taskState = nextState.taskState;
+  state.reports = nextState.reports;
+  state.audit = nextState.audit;
+  state.drafts = nextState.drafts;
+  recalculateProfileTotals();
+}
+
+function serializeState() {
+  return {
+    profile: state.profile,
+    taskState: state.taskState,
+    reports: state.reports,
+    audit: state.audit,
+    drafts: state.drafts
+  };
+}
+
+function persistLocalState() {
+  localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(state.profile));
+  localStorage.setItem(STORAGE_KEYS.taskState, JSON.stringify(state.taskState));
+  localStorage.setItem(STORAGE_KEYS.reports, JSON.stringify(state.reports));
+  localStorage.setItem(STORAGE_KEYS.audit, JSON.stringify(state.audit));
+  localStorage.setItem(STORAGE_KEYS.drafts, JSON.stringify(state.drafts));
+}
+
+function persistAllState() {
+  persistLocalState();
+  saveCloudState();
+}
+
+function setCloudStatus(status, detail) {
+  cloud.status = status;
+  cloud.detail = detail;
 }

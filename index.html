@@ -15,6 +15,23 @@
 
   <main class="app-shell">
     <section class="hero-panel panel">
+      <div class="cloud-strip">
+        <div class="cloud-copy">
+          <p class="eyebrow">雲端同步</p>
+          <strong id="cloudStatus">本機模式</strong>
+          <p class="cloud-detail" id="cloudDetail">而家資料只會留喺你部裝置。</p>
+          <span class="cloud-meta" id="cloudMeta">填好 Supabase config 後先會出現雲端同步</span>
+        </div>
+        <form class="auth-form" id="authForm">
+          <label class="field auth-field">
+            <span>Email Login</span>
+            <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+          </label>
+          <button class="primary-btn" id="authSubmitBtn" type="submit">收 Magic Link</button>
+          <button class="ghost-btn" id="signOutBtn" type="button" hidden>登出</button>
+        </form>
+      </div>
+
       <div class="hero-topbar">
         <div>
           <p class="eyebrow">RUS · 六眼模式</p>
@@ -308,6 +325,8 @@
     </article>
   </template>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
