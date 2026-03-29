@@ -900,6 +900,8 @@ function renderCloudMeta() {
   refs.cloudActions.hidden = !isConnected;
   refs.authForm.classList.toggle("is-hidden", isConnected);
   refs.cloudActions.classList.toggle("is-hidden", !isConnected);
+  refs.authForm.style.display = isConnected ? "none" : "flex";
+  refs.cloudActions.style.display = isConnected ? "flex" : "none";
   refs.authForm.setAttribute("aria-hidden", String(isConnected));
   refs.cloudActions.setAttribute("aria-hidden", String(!isConnected));
   refs.authEmail.disabled = isConnected;
