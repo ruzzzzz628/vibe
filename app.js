@@ -764,7 +764,7 @@ function handleAddCustomFood() {
   renderActivityForm();
 }
 
-function handleReportSave(event) {
+async function handleReportSave(event) {
   event.preventDefault();
   const formData = new FormData(refs.activityForm);
   const payload = Object.fromEntries(formData.entries());
@@ -788,11 +788,11 @@ function handleReportSave(event) {
     title: `已儲存活動快照 第 ${version} 版`,
     detail: summarizeReport(report)
   });
-  persistAllState({ immediate: true });
+  await persistAllState({ immediate: true });
   render();
 }
 
-function handleDayReset() {
+async function handleDayReset() {
   const hadTasks = Boolean(state.taskState[selectedDate]);
   const hadReports = Array.isArray(state.reports[selectedDate]) && state.reports[selectedDate].length > 0;
   const hadDraft = Boolean(state.drafts[selectedDate]);
@@ -812,7 +812,7 @@ function handleDayReset() {
     });
   }
 
-  persistAllState({ immediate: true });
+  await persistAllState({ immediate: true });
   render();
 }
 
@@ -1140,7 +1140,7 @@ function renderAudit() {
   });
 }
 
-function toggleTask(dateKey, task) {
+async function toggleTask(dateKey, task) {
   const dateState = { ...(state.taskState[dateKey] || {}) };
   const current = Boolean(dateState[task.id]?.done);
   dateState[task.id] = {
@@ -1156,7 +1156,7 @@ function toggleTask(dateKey, task) {
     title: `${!current ? "已完成任務" : "取消勾選任務"} · ${task.task}`,
     detail: `${!current ? "加咗" : "扣返"} ${task.xp} XP，日期係 ${formatReadableDate(dateKey)}。`
   });
-  persistAllState({ immediate: true });
+  await persistAllState({ immediate: true });
   render();
 }
 
@@ -1551,7 +1551,7 @@ function persistLocalState() {
 
 function persistAllState({ immediate = false } = {}) {
   persistLocalState();
-  saveCloudState({ immediate });
+  return saveCloudState({ immediate });
 }
 
 function setCloudStatus(status, detail) {
